@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Users, Ticket, LayoutDashboard, Settings } from 'lucide-react';
+import { Users, Ticket,History, LayoutDashboard, Settings } from 'lucide-react';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -12,6 +12,7 @@ export default function Sidebar() {
     { name: 'Bảng điều khiển', href: '/', icon: LayoutDashboard },
     { name: 'Quản lý Voucher', href: '/vouchers', icon: Ticket },
     { name: 'Quản lý User', href: '/users', icon: Users },
+    { name: 'Lịch sử sử dụng', href: '/voucher-usages', icon: History },
   ];
 
   return (

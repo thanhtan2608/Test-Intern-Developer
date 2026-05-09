@@ -5,10 +5,12 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.example.ql_voucher_be.infrastructure.persistence.Voucher_usages.VoucherUsageDb;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(name = "vouchers")
@@ -20,7 +22,7 @@ public class VouchersDb {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false, length = 50)
+    @Column(unique = true, nullable = false)
     private String code;
 
     @Column(name = "discount_percent", nullable = false)
@@ -40,6 +42,8 @@ public class VouchersDb {
     private LocalDateTime createdAt;
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now(); // Gán giá trị ngay trước khi lưu vào DB
+        this.createdAt = LocalDateTime.now();
     }
+    @OneToMany(mappedBy = "voucher", cascade = CascadeType.ALL)
+    private List<VoucherUsageDb> usages;
 }

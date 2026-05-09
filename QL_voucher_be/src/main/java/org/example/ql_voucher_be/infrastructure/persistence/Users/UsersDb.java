@@ -4,7 +4,10 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.example.ql_voucher_be.infrastructure.persistence.Voucher_usages.VoucherUsageDb;
+
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "users") // Ánh xạ tới bảng users trong DB
@@ -36,4 +39,6 @@ public class UsersDb {
             this.createdAt = LocalDateTime.now();
         }
     }
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<VoucherUsageDb> voucherUsages;
 }

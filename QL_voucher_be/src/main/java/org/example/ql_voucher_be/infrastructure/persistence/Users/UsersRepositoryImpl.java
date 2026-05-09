@@ -7,6 +7,7 @@ import org.example.ql_voucher_be.app.mapper.UsersMapper; // Đảm bảo đúng 
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
@@ -34,5 +35,12 @@ public class UsersRepositoryImpl implements UsersRepository {
         return usersJpaRepository.findAll().stream()
                 .map(usersMapper::toDomainEntity)
                 .collect(Collectors.toList());
+    }
+    @Override
+    public Optional<Users> findByEmail(String email) {
+        // 1. Tìm trong DB thông qua JpaRepository
+        // 2. Nếu tìm thấy, dùng mapper chuyển sang Domain Entity
+        return usersJpaRepository.findByEmail(email)
+                .map(usersMapper::toDomainEntity);
     }
 }

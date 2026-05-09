@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -13,5 +13,5 @@ public class Voucher_usages {
     private Long id;
     private Long user_id;
     private Long voucher_id;
-   private Date used_at;
+   private LocalDateTime used_at;
 }

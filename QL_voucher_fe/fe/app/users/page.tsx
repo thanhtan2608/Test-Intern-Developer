@@ -1,16 +1,23 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit2, Trash2, User, Mail, Phone, X, Loader2, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, User, Mail, Phone, X, Loader2, Search, TicketCheck } from 'lucide-react';
 import { UsersResponse, UsersRequest } from '@/modules/users/types/users.type';
 import { getAllUsersUseCase } from '@/modules/users/useCases/getAllUsersUseCase';
 import { createUsersUseCase } from '@/modules/users/useCases/createUsersUseCase';
+// Import thêm UseCase sử dụng Voucher
+import { useVoucherUseCase } from '@/modules/voucher_usages/useCases/useVoucherUseCase';
 
 export default function UserPage() {
   const [users, setUsers] = useState<UsersResponse[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isUseVoucherModalOpen, setIsUseVoucherModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Trạng thái cho việc sử dụng voucher
+  const [selectedUser, setSelectedUser] = useState<UsersResponse | null>(null);
+  const [voucherCode, setVoucherCode] = useState('');
 
   const [formData, setFormData] = useState<UsersRequest>({
     name: '',
@@ -45,9 +52,40 @@ export default function UserPage() {
     }
   };
 
+  // Xử lý nộp mã voucher
+  const handleUseVoucher = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUser || !voucherCode) return;
+    
+    setIsLoading(true);
+    try {
+      await useVoucherUseCase({
+        userId: selectedUser.id,
+        voucherCode: voucherCode.toUpperCase()
+      });
+      alert(`Sử dụng voucher ${voucherCode} thành công cho ${selectedUser.name}!`);
+      closeUseVoucherModal();
+    } catch (error: any) {
+      alert(error.message || "Lỗi: Voucher hết hạn hoặc không tồn tại!");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const closeModal = () => {
     setIsModalOpen(false);
     setFormData({ name: '', email: '', phone: '' });
+  };
+
+  const openUseVoucherModal = (user: UsersResponse) => {
+    setSelectedUser(user);
+    setIsUseVoucherModalOpen(true);
+  };
+
+  const closeUseVoucherModal = () => {
+    setIsUseVoucherModalOpen(false);
+    setSelectedUser(null);
+    setVoucherCode('');
   };
 
   const filteredUsers = users.filter(user => 
@@ -73,7 +111,7 @@ export default function UserPage() {
           </button>
         </div>
 
-        {/* Search & Filter Bar */}
+        {/* Search Bar */}
         <div className="mb-6 relative">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <Search size={18} className="text-gray-400" />
@@ -95,7 +133,6 @@ export default function UserPage() {
                 <tr className="bg-gray-50/50">
                   <th className="px-6 py-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Họ và Tên</th>
                   <th className="px-6 py-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Liên hệ</th>
-                  <th className="px-6 py-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Ngày tham gia</th>
                   <th className="px-6 py-5 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Thao tác</th>
                 </tr>
               </thead>
@@ -116,11 +153,15 @@ export default function UserPage() {
                         <span className="text-sm text-gray-400 flex items-center gap-1"><Phone size={14}/> {user.phone}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {new Date(user.createdAt).toLocaleDateString('vi-VN')}
-                    </td>
                     <td className="px-6 py-4">
                       <div className="flex justify-center gap-2">
+                        {/* NÚT SỬ DỤNG VOUCHER */}
+                        <button 
+                          onClick={() => openUseVoucherModal(user)}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-all font-medium text-sm border border-emerald-100"
+                        >
+                          <TicketCheck size={16} /> Dùng Voucher
+                        </button>
                         <button className="p-2 text-gray-400 hover:text-indigo-600 transition-all"><Edit2 size={18} /></button>
                         <button className="p-2 text-gray-400 hover:text-red-600 transition-all"><Trash2 size={18} /></button>
                       </div>
@@ -128,9 +169,7 @@ export default function UserPage() {
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={4} className="px-6 py-20 text-center text-gray-400 italic">
-                      Không tìm thấy người dùng nào phù hợp.
-                    </td>
+                    <td colSpan={3} className="px-6 py-20 text-center text-gray-400 italic">Chưa có người dùng.</td>
                   </tr>
                 )}
               </tbody>
@@ -139,69 +178,69 @@ export default function UserPage() {
         </div>
       </div>
 
-      {/* Modal Thêm Người Dùng */}
+      {/* Modal Thêm Người Dùng (Giữ nguyên) */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={!isLoading ? closeModal : undefined}></div>
-          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900">Thêm Thành Viên</h2>
-              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600"><X size={24} /></button>
+         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in duration-200">
+               <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-bold">Thêm Thành Viên</h2>
+                  <X className="cursor-pointer" onClick={closeModal} />
+               </div>
+               <form onSubmit={handleSubmit} className="space-y-4">
+                  <input type="text" placeholder="Tên" required className="w-full p-3 border rounded-xl" onChange={e => setFormData({...formData, name: e.target.value})} />
+                  <input type="email" placeholder="Email" required className="w-full p-3 border rounded-xl" onChange={e => setFormData({...formData, email: e.target.value})} />
+                  <input type="text" placeholder="Số điện thoại" className="w-full p-3 border rounded-xl" onChange={e => setFormData({...formData, phone: e.target.value})} />
+                  <button type="submit" disabled={isLoading} className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold">
+                     {isLoading ? <Loader2 className="animate-spin mx-auto" /> : "Lưu"}
+                  </button>
+               </form>
+            </div>
+         </div>
+      )}
+
+      {/* MODAL SỬ DỤNG VOUCHER */}
+      {isUseVoucherModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-emerald-50">
+              <h2 className="text-xl font-bold text-emerald-900 flex items-center gap-2">
+                <TicketCheck size={20}/> Áp dụng Voucher
+              </h2>
+              <button onClick={closeUseVoucherModal} className="text-emerald-400 hover:text-emerald-600"><X size={24} /></button>
             </div>
             
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1 flex items-center gap-2">
-                  <User size={16}/> Họ và Tên
-                </label>
-                <input 
-                  type="text" required
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                  placeholder="Nguyễn Văn A"
-                />
+            <form onSubmit={handleUseVoucher} className="p-6 space-y-4">
+              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <p className="text-xs text-gray-500 uppercase font-bold mb-1">Người sử dụng</p>
+                <p className="font-bold text-gray-900">{selectedUser?.name}</p>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1 flex items-center gap-2">
-                  <Mail size={16}/> Email
-                </label>
-                <input 
-                  type="email" required
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                  placeholder="vi-du@gmail.com"
-                />
-              </div>
+            <div>
+  <label className="block text-sm font-semibold text-gray-700 mb-2">
+    Nhập mã khuyến mãi
+  </label>
+  <input 
+    type="text" required autoFocus
+    value={voucherCode}
+    onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+    className="w-full px-4 py-3 rounded-xl border-2 border-emerald-100 focus:border-emerald-500 focus:ring-0 outline-none transition-all font-mono text-lg tracking-widest text-center"
+    placeholder="VD: GIAM50"
+  />
+</div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1 flex items-center gap-2">
-                  <Phone size={16}/> Số điện thoại
-                </label>
-                <input 
-                  type="text" required
-                  value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                  placeholder="09xx xxx xxx"
-                />
-              </div>
-
-              <div className="pt-4 flex gap-3">
+              <div className="flex gap-3">
                 <button 
-                  type="button" onClick={closeModal}
-                  className="flex-1 py-3 border border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition-all"
+                  type="button" onClick={closeUseVoucherModal}
+                  className="flex-1 py-3 text-gray-500 font-semibold"
                 >
                   Hủy
                 </button>
                 <button 
-                  type="submit" disabled={isLoading}
-                  className="flex-1 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 disabled:bg-indigo-400 transition-all"
+                  type="submit" disabled={isLoading || !voucherCode}
+                  className="flex-1 py-3 bg-emerald-600 text-white font-semibold rounded-xl shadow-lg shadow-emerald-100 flex items-center justify-center gap-2 disabled:bg-emerald-300"
                 >
                   {isLoading && <Loader2 size={18} className="animate-spin" />}
-                  Lưu Thông Tin
+                  Xác nhận dùng
                 </button>
               </div>
             </form>

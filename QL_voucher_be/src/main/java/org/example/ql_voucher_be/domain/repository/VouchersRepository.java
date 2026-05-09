@@ -23,4 +23,5 @@ public interface VouchersRepository {
 
     // Kiểm tra sự tồn tại của ID
     boolean existsById(Long id);
+    void recordUsage(Long voucherId, Long userId);
 }
